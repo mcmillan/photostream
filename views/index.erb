@@ -6,47 +6,95 @@
     <title>Photostream</title>
 
     <link href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.1/css/bootstrap.min.css" rel="stylesheet">
+    <link href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.1/css/bootstrap-responsive.min.css" rel="stylesheet">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
   </head>
 
   <body>
 
+    <div id="fb-root"></div>
+
     <div class="container">
 
       <h1 class="page-header">Photostream</h1>
 
-      <ul class="thumbnails"></ul>
+      <div class="authorized" style="text-align: center;">
+
+        Loading...
+
+      </div>
+
+      <div class="not_authorized" style="display: none;">
+
+        <a href="#" class="btn btn-primary btn-large">Log your bad self in</a>
+
+      </div>
 
     </div>
 
     <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script src="//connect.facebook.net/en_US/all.js"></script>
     <script>
 
-      function poll() {
+      FB.init({
+
+        appId: '<%= ENV['FACEBOOK_APP_ID'] %>'
+
+      });
+
+      FB.getLoginStatus(function(response) {
+
+        if(response.authResponse) {
+
+          setCurrentUser(response.authResponse);
+
+        }
+        else {
+
+          $('.authorized').hide();
+          $('.not_authorized').show();
+
+          $('.not_authorized a').on('click', function(event) {
+
+            event.preventDefault();
+
+            FB.login(function(response) {
+
+              if(!response.authResponse)
+                return;
+
+              setCurrentUser(response.authResponse);
+
+            }, {scope: 'publish_stream'});
+
+          });
+
+        }
+
+      });
+
+      function setCurrentUser(authResponse) {
 
         $.ajax({
 
-          url: '/photos',
-          success: function(photos) {
+          url: '/users/auth',
+          type: 'post',
+          data: {
 
-            $.each(photos, function(index, photo) {
+            access_token: authResponse.accessToken
 
-              if($('.thumbnails img[src="/photos/' + photo + '"]').length != 0)
-                return;
+          },
+          success: function(response) {
 
-              $('.thumbnails').prepend('<li class="span4"><a href="/photos/' + photo + '" class="thumbnail"><img src="/photos/' + photo + '"></a></li>')
-
-            });
-
-            setTimeout(poll, 1000);
+            $('.authorized').html('<p>Hey there, ' + response.first_name + '.</p><img src="/barcode?content=' + response.id +'">')
 
           }
 
         });
 
       }
-
-      poll();
 
     </script>
 

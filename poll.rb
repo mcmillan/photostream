@@ -1,4 +1,5 @@
 require 'gphoto4ruby'
+require 'rmagick'
 
 `killall PTPCamera`
 
@@ -17,6 +18,16 @@ while true do
 
   next if event.type != 'file added'
 
-  camera.save :to_folder => "#{Dir.pwd}/public/photos"
+  camera.save :to_folder => 'tmp'
+
+  image   = Magick::Image.read("tmp/#{event.file}")[0]
+  overlay = Magick::Image.read("cage.png")[0]
+
+  image.resize_to_fit!(800)
+  image.composite!(overlay, Magick::SouthEastGravity, Magick::OverCompositeOp)
+
+  image.write("public/photos/#{event.file}")
+
+  FileUtils.rm_rf("tmp/#{event.file}")
 
 end

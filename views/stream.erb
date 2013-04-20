@@ -1,0 +1,138 @@
+<!doctype html>
+<html>
+
+  <head>
+
+    <title>Photostream</title>
+
+    <link href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.1/css/bootstrap.min.css" rel="stylesheet">
+
+  </head>
+
+  <body>
+
+    <div class="container">
+
+      <h1 class="page-header">Photostream</h1>
+
+      <p class="lead upload-status" style="display: none; text-align: center;"></p>
+
+      <form class="well">
+
+        <span class="pull-right muted" style="line-height: 30px;">You're currently taking photos of <strong><%= current_user['profile']['name'] %></strong>.</span>
+
+        Change User: 
+        <input type="text" value="<%= current_user['profile']['id'] %>" style="margin: 0;">
+
+      </form>
+
+      <ul class="thumbnails"></ul>
+
+    </div>
+
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script>
+
+      function poll() {
+
+        $.ajax({
+
+          url: '/stream/photos',
+          success: function(photos) {
+
+            $.each(photos, function(index, photo) {
+
+              if($('.thumbnails img[src="/photos/' + photo + '"]').length != 0)
+                return;
+
+              $('.thumbnails').prepend('<li class="span4"><a href="#" data-image="' + photo + '" class="thumbnail"><img src="/photos/' + photo + '"></a></li>')
+
+            });
+
+            $('.thumbnails li').each(function() {
+
+              photo = $(this).find('a').data('image');
+
+              if(photos.indexOf(photo) != -1)
+                return;
+
+              $(this).remove();
+
+            });
+
+            setTimeout(poll, 1000);
+
+          }
+
+        });
+
+      }
+
+      poll();
+
+      $('form').on('submit', function(event) {
+
+        event.preventDefault();
+
+        id = $(this).find('input').val();
+
+        if(!id)
+          return alert('Please enter a user ID.');
+
+        $.ajax({
+
+          url: '/users/current',
+          type: 'post',
+          data: {
+
+            id: id
+
+          },
+          success: function(response) {
+
+            $('.well span strong').text(response.profile.name);
+
+          }
+
+        });
+
+      });
+
+      $('.thumbnails').on('click', 'li a', function(event) {
+
+        image = $(this).data('image');
+
+        $('.well, .thumbnails').fadeOut(300);
+        $('.upload-status').removeClass('text-success').text('Processing...').delay(300).fadeIn(300)
+
+        $.ajax({
+
+          url: '/users/share',
+          type: 'post',
+          data: {
+
+            image: image
+
+          },
+          success: function(response) {
+
+            $('.upload-status').addClass('text-success').text('OK!');
+
+            setTimeout(function() {
+
+              $('.upload-status').hide();
+              $('.well, .thumbnails').fadeIn(300);
+
+            }, 1000);
+
+          }
+
+        });
+
+      });
+
+    </script>
+
+  </body>
+
+</html>
