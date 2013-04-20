@@ -1,2 +1,3 @@
 public/photos/*.jpg
+public/tmp/*.jpg
 .DS_Store
